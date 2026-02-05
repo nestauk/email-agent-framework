@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Status - Email Agent{% endblock %}
+
+{% block content %}
+<h1>System Status</h1>
+
+<article>
+    <header>Environment Configuration</header>
+    <table>
+        <thead>
+            <tr>
+                <th scope="col">Variable</th>
+                <th scope="col">Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for var, is_set in env_checks.items() %}
+            <tr>
+                <td><code>{{ var }}</code></td>
+                <td>
+                    {% if is_set %}
+                    <span class="status-indicator status-ok"></span> Configured
+                    {% else %}
+                    <span class="status-indicator status-error"></span> Not configured
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</article>
+
+<article>
+    <header>Database Status</header>
+    {% if db_status.connected %}
+    <p><span class="status-indicator status-ok"></span> <strong>Connected</strong></p>
+    <table>
+        <tbody>
+            <tr>
+                <td>Active Users</td>
+                <td>{{ db_status.active_users }}</td>
+            </tr>
+            <tr>
+                <td>Pending Jobs</td>
+                <td>{{ db_status.pending_jobs }}</td>
+            </tr>
+        </tbody>
+    </table>
+    {% else %}
+    <p><span class="status-indicator status-error"></span> <strong>Not Connected</strong></p>
+    {% if db_status.error %}
+    <p><small>Error: {{ db_status.error }}</small></p>
+    {% endif %}
+    {% endif %}
+</article>
+
+<article>
+    <header>Quick Links</header>
+    <ul>
+        <li><a href="/">Dashboard</a> - View and review pending jobs</li>
+        <li><a href="/setup">Setup</a> - Connect your Gmail account</li>
+        <li><a href="/health">Health Check</a> - API health endpoint</li>
+    </ul>
+</article>
+{% endblock %}

@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Email Agent{% endblock %}</title>
+
+    <!-- Pico CSS -->
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+          integrity="sha384-L1dWfspMTHU/ApYnFiMz2QID/PlP1xCW9visvBdbEkOLkSSWsP6ZJWhPw6apiXxU"
+          crossorigin="anonymous">
+
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.12/dist/htmx.min.js"
+            integrity="sha384-ujb1lZYygJmzgSwoxRggbCHcjc0rB2XoQrxeTUQyRjrOnlCoYta87iKBWq3EsdM2"
+            crossorigin="anonymous"></script>
+
+    <style>
+        /* Minimal custom styles */
+        :root {
+            --pico-font-size: 16px;
+        }
+
+        .flash-success {
+            background-color: var(--pico-ins-color);
+            padding: 1rem;
+            border-radius: var(--pico-border-radius);
+            margin-bottom: 1rem;
+        }
+
+        .flash-error {
+            background-color: var(--pico-del-color);
+            padding: 1rem;
+            border-radius: var(--pico-border-radius);
+            margin-bottom: 1rem;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+        }
+
+        .status-ok { background-color: #22c55e; }
+        .status-error { background-color: #ef4444; }
+        .status-warning { background-color: #f59e0b; }
+
+        .job-pending { color: var(--pico-primary); }
+        .job-completed { color: #22c55e; }
+
+        .action-accept { --pico-primary: #22c55e; }
+        .action-edit { --pico-primary: #f59e0b; }
+        .action-respond { --pico-primary: #3b82f6; }
+        .action-ignore { --pico-primary: #ef4444; }
+
+        /* HTMX loading indicator */
+        .htmx-indicator {
+            opacity: 0;
+            transition: opacity 200ms ease-in;
+        }
+        .htmx-request .htmx-indicator,
+        .htmx-request.htmx-indicator {
+            opacity: 1;
+        }
+
+        /* Job table styling */
+        .job-table td {
+            vertical-align: middle;
+        }
+
+        .email-body {
+            white-space: pre-wrap;
+            font-family: inherit;
+            background: var(--pico-card-background-color);
+            padding: 1rem;
+            border-radius: var(--pico-border-radius);
+            border: 1px solid var(--pico-muted-border-color);
+        }
+
+        nav ul {
+            margin-bottom: 0;
+        }
+    </style>
+
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <header class="container">
+        <nav>
+            <ul>
+                <li><strong>Email Agent</strong></li>
+            </ul>
+            <ul>
+                <li><a href="/" {% if request.url.path == "/" %}aria-current="page"{% endif %}>Dashboard</a></li>
+                <li><a href="/setup" {% if request.url.path == "/setup" %}aria-current="page"{% endif %}>Setup</a></li>
+                <li><a href="/status" {% if request.url.path == "/status" %}aria-current="page"{% endif %}>Status</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="container">
+        {% if flash_success %}
+        <div class="flash-success" role="alert">
+            {{ flash_success }}
+        </div>
+        {% endif %}
+
+        {% if flash_error %}
+        <div class="flash-error" role="alert">
+            {{ flash_error }}
+        </div>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="container">
+        <hr>
+        <p><small>Email Agent Framework</small></p>
+    </footer>
+
+    <noscript>
+        <style>
+            [hx-get], [hx-post], [hx-trigger] { display: none !important; }
+            .noscript-visible { display: block !important; }
+        </style>
+        <div class="container">
+            <article>
+                <header>JavaScript Required</header>
+                <p>This interface uses HTMX for dynamic updates. Please enable JavaScript for the best experience.</p>
+                <p>Alternatively, you can use the CLI tool: <code>email-agent-review</code></p>
+            </article>
+        </div>
+    </noscript>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,220 @@
+# Nesta Email Agent Framework
+
+An open-source email agent framework built with [LangGraph](https://github.com/langchain-ai/langgraph). Automates email triage, response drafting, and human-in-the-loop review workflows.
+
+## Features
+
+- **Email Triage**: Automatically classifies emails as `respond`, `notify`, or `ignore`
+- **Response Drafting**: Uses LLMs to draft contextual email responses
+- **Human-in-the-Loop**: Pauses for human review before sending emails
+- **Web UI**: Built-in dashboard for reviewing and approving email drafts
+- **Memory System**: Learns user preferences over time
+- **Gmail Integration**: Full Gmail API support for reading and sending emails
+- **RAG Support**: Optional knowledge base search for informed responses
+- **PDF Processing**: Extracts and summarizes PDF attachments
+
+## Architecture
+
+```
+email_agent/
+├── agent_api/           # FastAPI server + background worker
+│   ├── server.py        # REST API endpoints
+│   ├── web_routes.py    # Web UI routes
+│   ├── worker.py        # LangGraph worker (polls Gmail, processes emails)
+│   ├── storage.py       # PostgreSQL persistence
+│   ├── schemas.py       # Pydantic models
+│   └── templates/       # Jinja2 templates for web UI
+│
+├── agent/               # LangGraph email assistant
+│   ├── graph.py         # Main workflow definition
+│   ├── prompts.py       # LLM prompts and instructions
+│   ├── schemas.py       # State and message types
+│   ├── configuration.py # Mode configuration
+│   ├── utils.py         # Parsing, formatting utilities
+│   ├── eval/            # Evaluation framework
+│   └── tools/           # LangGraph tools
+│       ├── default/     # Basic email/calendar tools
+│       ├── gmail/       # Gmail API integration
+│       └── rag/         # Document retrieval
+│
+└── config/              # YAML configuration files
+```
+
+## Quick Start
+
+### Prerequisites
+
+- Python 3.11+
+- PostgreSQL 16+
+- Gmail OAuth credentials (for Gmail integration)
+
+### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/simonwisdom/nesta-email-agent-framework.git
+cd nesta-email-agent-framework
+
+# Install dependencies with uv
+uv sync
+
+# Install dev dependencies (linting, tests, pre-commit)
+uv sync --group dev
+
+# Copy and configure environment variables
+cp .env.example .env
+# Edit .env with your settings
+
+# Install pre-commit hooks
+uv run pre-commit install --install-hooks
+```
+
+### Running Locally
+
+```bash
+# Start Postgres (or use docker compose below)
+# Example: docker run --name email-agent-postgres -p 5432:5432 -e POSTGRES_PASSWORD=email_password -d postgres:16-alpine
+
+# Start the API server
+uv run uvicorn email_agent.agent_api.server:app --reload
+
+# In another terminal, start the worker
+uv run python -m email_agent.agent_api.worker
+```
+
+### Running with Docker
+
+```bash
+# Ensure .env exists at repo root
+cp .env.example .env
+
+cd docker
+docker compose up -d
+```
+
+## Configuration
+
+Copy `.env.example` to `.env` and configure your settings. Key variables:
+- `DATABASE_URL` - PostgreSQL connection string
+- `GMAIL_CLIENT_ID` / `GMAIL_CLIENT_SECRET` - OAuth credentials
+- `AZURE_OPENAI_*` - Azure OpenAI endpoints and API key
+
+## LangGraph Workflow
+
+The email assistant follows this workflow:
+
+1. **Triage**: Classify incoming email as `respond`, `notify`, or `ignore`
+2. **Response Agent**: If `respond`, draft a response using available tools
+3. **Human Review**: Interrupt for user approval before sending
+4. **Memory Update**: Learn from user feedback to improve future responses
+
+## Human-in-the-Loop (HITL) Review
+
+When the agent drafts an email or needs user input, it pauses execution using LangGraph's `interrupt()` mechanism. You have several options for handling these interrupts:
+
+### Option 1: Built-in Web UI (Recommended)
+
+The framework includes a web interface for reviewing pending actions:
+
+- **Dashboard** (`/`) - View all pending jobs with auto-refresh
+- **Review Page** (`/jobs/{job_id}`) - Review email drafts, edit content, approve or reject
+- **Setup Wizard** (`/setup`) - Configure Gmail OAuth credentials
+- **Status Page** (`/status`) - Check system health and worker status
+
+Simply start the server and navigate to `http://localhost:8000` in your browser.
+
+![Review Page](assets/review-page.png)
+
+### Option 2: CLI Review Tool
+
+The framework includes a built-in CLI for reviewing pending actions:
+
+```bash
+# List all pending jobs awaiting review
+uv run email-agent-review list
+
+# Review a specific job interactively
+uv run email-agent-review review hitl-abc123
+
+# Watch mode - get notified of new jobs
+uv run email-agent-review watch
+
+# Quick actions (skip interactive review)
+uv run email-agent-review accept hitl-abc123
+uv run email-agent-review ignore hitl-abc123
+```
+
+The CLI requires these environment variables:
+- `DATABASE_URL` - PostgreSQL connection string
+- `AGENT_API_URL` - API URL (default: `http://localhost:8000`)
+- `AGENT_API_KEY` - API key if authentication is enabled
+
+### Option 3: LangGraph Studio
+
+[LangGraph Studio](https://github.com/langchain-ai/langgraph-studio) provides a visual interface for managing agent workflows, including an "Agent Inbox" for handling interrupts.
+
+1. Install LangGraph Studio following the [official documentation](https://langchain-ai.github.io/langgraph/concepts/langgraph_studio/)
+2. Point it to your running LangGraph instance
+3. Use the Agent Inbox to review and respond to pending actions
+
+### Option 4: Auto-Accept Mode (Testing Only)
+
+For development and testing, you can bypass human review entirely:
+
+```bash
+WORKER_AUTO_ACCEPT_INTERRUPTS=true
+```
+
+This automatically accepts all proposed actions without human review.
+
+## Extending the Framework
+
+### Adding Custom Tools
+
+Create a new tool in `email_agent/agent/tools/`:
+
+```python
+from langchain_core.tools import tool
+
+@tool
+def my_custom_tool(arg: str) -> str:
+    """Description of what your tool does."""
+    return f"Result: {arg}"
+```
+
+Register it in `tools/base.py` and add to the appropriate mode in `configuration.py`.
+
+### Customizing Prompts
+
+Edit `email_agent/prompts.py` to customize:
+- Triage rules (`default_triage_instructions`)
+- Response style (`default_response_preferences`)
+- System prompts (`agent_system_prompt_hitl_memory`)
+
+## Development
+
+```bash
+# Format code
+uv run ruff format .
+
+# Lint
+uv run ruff check . --fix
+
+# Run pre-commit on all files
+uv run pre-commit run --all-files
+
+# Run tests
+uv run pytest
+```
+
+## License
+
+MIT License - see [LICENSE](LICENSE) for details.
+
+## Contributing
+
+Contributions are welcome! Please submit pull requests to the `main` branch.
+
+## Acknowledgments
+
+This framework was developed by [Nesta](https://www.nesta.org.uk/) as part of the Agentic AI Residency program.

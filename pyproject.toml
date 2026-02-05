@@ -1,0 +1,103 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "email-agent-framework"
+dynamic = ["version"]
+description = "An open-source email agent framework built with LangGraph. Automates email triage, response drafting, and human-in-the-loop review workflows."
+authors = [{ name = "Nesta" }]
+license = { text = "MIT" }
+readme = "README.md"
+requires-python = ">=3.11,<4"
+dependencies = [
+    "python-dotenv",
+    "pyyaml",
+    "fastapi>=0.115.0",
+    "uvicorn>=0.32.0",
+    "httpx>=0.27.0",
+    "python-multipart>=0.0.9",
+    "jinja2>=3.1.0",
+    "email-validator>=2.1.1",
+    "langgraph>=1.0.3",
+    "langgraph-checkpoint-sqlite>=2.0.0",
+    "langchain>=1.0.5",
+    "html2text>=2024.2.26",
+    "langchain-openai>=1.0.2",
+    "google-api-python-client>=2.143.0",
+    "google-auth>=2.36.0",
+    "google-auth-oauthlib>=1.2.1",
+    "google-auth-httplib2>=0.2.0",
+    "pdfplumber>=0.11.4",
+    "python-dateutil>=2.9.0",
+    "docx2txt>=0.9",
+    "presidio-analyzer>=2.2.360",
+    "pip>=25.3",
+    "flagembedding>=1.2.0",
+    "transformers>=4.40.0,<5.0.0",
+    "langchain-qdrant>=1.1.0",
+    "langchain-community>=0.3.0",
+    "langchain-text-splitters>=0.3.0",
+    "psycopg2-binary>=2.9.9",
+    "qdrant-client>=1.15.1",
+    "rich>=13.0.0",
+    "aiosqlite>=0.20.0",
+    "langsmith>=0.1.0",
+    "matplotlib>=3.8.0",
+]
+
+[project.urls]
+repository = "https://github.com/simonwisdom/nesta-email-agent-framework"
+issues = "https://github.com/simonwisdom/nesta-email-agent-framework/issues"
+
+[project.scripts]
+email-agent-review = "email_agent.agent_api.cli:main"
+email-agent-eval-triage = "email_agent.agent.eval.evaluate_triage:main"
+
+[dependency-groups]
+dev = ["ipykernel", "jupytext", "nbstripout", "ruff", "pre-commit", "pytest"]
+
+[tool.hatch.version]
+path = "email_agent/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["email_agent"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+    "ANN", # flake8-annotations
+    "B",   # flake8-bugbear: Likely bugs
+    "C",   # flake8-comprehensions and mccabe complexity
+    "D",   # pydocstyle: Docstring conventions
+    "E",   # pycodestyle: Errors (default)
+    "F",   # pyflakes: Linter
+    "I",   # isort
+    "N",   # pep8-naming: Naming conventions
+    "W",   # pycodestyle: Warnings (default)
+]
+ignore = [
+    "D100", # Warns about missing module-level docstrings
+    "S101", # Warns about assert being removed when compiled
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["email_agent"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401", "E402", "D104"]
+"email_agent/agent/**/*.py" = ["ANN", "D", "E501", "C901", "N806", "B005", "B905"]
+"email_agent/agent_api/cli.py" = ["ANN", "D", "C901"]
+"tests/**/*.py" = ["ANN", "D"]
+
+[tool.ruff.format]
+docstring-code-format = true
+docstring-code-line-length = "dynamic"

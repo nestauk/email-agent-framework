@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Email Agent{% endblock %}
+
+{% block head %}
+<style>
+    .dashboard-container {
+        max-width: 640px;
+        margin: 0 auto;
+    }
+
+    .dashboard-header {
+        margin-bottom: 1.5rem;
+    }
+
+    .dashboard-header h1 {
+        margin-bottom: 0.25rem;
+    }
+
+    .dashboard-header p {
+        color: #64748b;
+        font-size: 0.875rem;
+        margin: 0;
+    }
+
+    .job-card {
+        display: block;
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 1rem 1.25rem;
+        margin-bottom: 0.75rem;
+        text-decoration: none;
+        color: inherit;
+        transition: all 0.15s;
+    }
+
+    .job-card:hover {
+        border-color: #3b82f6;
+        background: #f8fafc;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .job-card-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .job-card-content {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .job-card-from {
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 0.125rem;
+    }
+
+    .job-card-subject {
+        color: #64748b;
+        font-size: 0.875rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .job-card-meta {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-shrink: 0;
+    }
+
+    .job-card-time {
+        color: #94a3b8;
+        font-size: 0.75rem;
+    }
+
+    .job-card-action {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.375rem 0.75rem;
+        background: #3b82f6;
+        color: white;
+        border-radius: 6px;
+        font-size: 0.8125rem;
+        font-weight: 500;
+        white-space: nowrap;
+    }
+
+    .job-card:hover .job-card-action {
+        background: #2563eb;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1.5rem;
+        background: #f8fafc;
+        border: 1px dashed #cbd5e1;
+        border-radius: 8px;
+    }
+
+    .empty-state-icon {
+        color: #94a3b8;
+        margin-bottom: 1rem;
+    }
+
+    .empty-state p {
+        color: #64748b;
+        margin: 0;
+    }
+
+    .empty-state p:first-of-type {
+        font-weight: 500;
+        color: #475569;
+        margin-bottom: 0.25rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <h1>Inbox</h1>
+        <p>Emails awaiting your review</p>
+    </div>
+
+    <div hx-get="/partials/job-list"
+         hx-trigger="every 5s"
+         hx-swap="innerHTML">
+        {% include "partials/job_list.html" %}
+    </div>
+</div>
+{% endblock %}

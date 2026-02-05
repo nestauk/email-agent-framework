@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Setup - Email Agent{% endblock %}
+
+{% block content %}
+<h1>Gmail Setup</h1>
+
+{% if success %}
+<article>
+    <header>Registration Successful!</header>
+    <p>Your Gmail account has been connected to the email agent.</p>
+    {% if request.query_params.get('email') %}
+    <p><strong>Email:</strong> {{ request.query_params.get('email') }}</p>
+    {% endif %}
+    <footer>
+        <a href="/" role="button">Go to Dashboard</a>
+    </footer>
+</article>
+{% endif %}
+
+{% if error %}
+<article>
+    <header>Setup Error</header>
+    <p>
+        {% if error == "invalid_state" %}
+        Invalid OAuth state. The authorization may have expired. Please try again.
+        {% elif error == "no_code" %}
+        No authorization code received from Google. Please try again.
+        {% elif error == "token_exchange_failed" %}
+        Failed to exchange authorization code for tokens. Please try again.
+        {% elif error == "token_exchange_error" %}
+        Error connecting to Google's token service. Please check your network and try again.
+        {% elif error == "missing_tokens" %}
+        Google did not return the required tokens. Please ensure you granted all permissions.
+        {% elif error == "profile_fetch_failed" %}
+        Failed to fetch your Gmail profile. Please try again.
+        {% elif error == "no_email" %}
+        Could not retrieve your email address from Google. Please try again.
+        {% elif error == "registration_failed" %}
+        Failed to register your account. Please check the server logs.
+        {% elif error == "missing_credentials" %}
+        Gmail OAuth credentials are not configured on the server.
+        {% else %}
+        {{ error }}
+        {% endif %}
+    </p>
+</article>
+{% endif %}
+
+{% if not success %}
+<article>
+    <header>Connect Your Gmail Account</header>
+    <p>Click the button below to authorize the email agent to monitor your inbox.</p>
+
+    {% if has_gmail_config %}
+    <p>
+        <a href="/setup/oauth/start" role="button">
+            Connect Gmail Account
+        </a>
+    </p>
+    <details>
+        <summary>What permissions are requested?</summary>
+        <p>The email agent requests the following Gmail permission:</p>
+        <ul>
+            <li><strong>gmail.modify</strong> - Read, compose, send, and permanently delete all your email from Gmail</li>
+        </ul>
+        <p><small>This permission is required to read incoming emails and send responses on your behalf.</small></p>
+    </details>
+    {% else %}
+    <p>
+        <mark>Gmail OAuth is not configured on this server.</mark>
+    </p>
+    <p>To enable Gmail setup, the server administrator needs to:</p>
+    <ol>
+        <li>Go to <a href="https://console.cloud.google.com/" target="_blank" rel="noopener">Google Cloud Console</a></li>
+        <li>Create a project and enable the Gmail API</li>
+        <li>Create OAuth 2.0 credentials (Web application type)</li>
+        <li>Add the callback URL: <code>{{ request.url_for('oauth_callback') }}</code></li>
+        <li>Set <code>GMAIL_CLIENT_ID</code> and <code>GMAIL_CLIENT_SECRET</code> environment variables</li>
+    </ol>
+    {% endif %}
+</article>
+
+<article>
+    <header>Alternative: CLI Setup</header>
+    <p>You can also set up Gmail using the command-line tool:</p>
+    <pre><code>email-agent-review setup</code></pre>
+    <p><small>The CLI supports the local OAuth flow with automatic browser redirect.</small></p>
+</article>
+{% endif %}
+{% endblock %}

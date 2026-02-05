@@ -1,0 +1,87 @@
+services:
+  # PostgreSQL database (local development only)
+  postgres:
+    image: postgres:16-alpine
+    container_name: email-agent-postgres
+    command: postgres -c log_min_messages=WARNING
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-email_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-email_password}
+      POSTGRES_DB: ${POSTGRES_DB:-email_agent}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-email_user} -d ${POSTGRES_DB:-email_agent}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - email-agent-network
+
+  # Agent API (FastAPI)
+  agent-api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: email-agent-api
+    env_file:
+      - ../.env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-email_user}:${POSTGRES_PASSWORD:-email_password}@postgres:5432/${POSTGRES_DB:-email_agent}
+      LOG_QUIET: "true"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../email_agent:/app/email_agent
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: >
+      sh -c "./scripts/wait-for-db.sh postgres 5432 &&
+             uvicorn email_agent.agent_api.server:app --host 0.0.0.0 --port 8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 10s
+      retries: 3
+    networks:
+      - email-agent-network
+
+  # LangGraph Worker (background email polling)
+  # Runs graph locally - does not require langgraph-server
+  worker:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: email-agent-worker
+    env_file:
+      - ../.env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-email_user}:${POSTGRES_PASSWORD:-email_password}@postgres:5432/${POSTGRES_DB:-email_agent}
+      LOG_QUIET: "true"
+      TRANSFORMERS_VERBOSITY: "error"
+    volumes:
+      - ../email_agent:/app/email_agent
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: >
+      sh -c "./scripts/wait-for-db.sh postgres 5432 &&
+             python -m email_agent.agent_api.worker"
+    restart: unless-stopped
+    networks:
+      - email-agent-network
+
+volumes:
+  postgres_data:
+
+networks:
+  email-agent-network:
+    driver: bridge

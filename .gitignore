@@ -1,0 +1,158 @@
+.recipes/
+.cookiecutter/state/
+
+# Local reference documentation (not part of project)
+local_docs/
+
+# Nesta specific
+research_daps/
+*.key
+
+# Report
+*.aux
+*.bbl
+*.blg
+
+# Metaflow
+.metaflow
+metaflow.s3.*
+.run_id
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Translations
+*.mo
+*.pot
+
+# Log files
+*.log
+info.log
+errors.log
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+target/
+
+# Configuration
+.env
+.envrc
+.config
+*.config
+
+# Database
+*.db
+*.db-wal
+*.db-shm
+*.rdb
+
+# IDEs
+.idea/
+.vscode/
+.spyproject/
+
+# Jupyter NB Checkpoints
+.ipynb_checkpoints/
+
+# Mac OS-specific storage files
+.DS_Store
+
+# vim
+*.swp
+*.swo
+*~
+
+# ruff cache
+.ruff_cache/
+
+# NPM
+node_modules/
+
+# Virtual environments
+.venv/
+
+# R specific files
+.Rhistory
+.Rapp.history
+.RData
+.Ruserdata
+.Rproj.user/
+*.utf8.md
+*.knit.md
+.Renviron
+
+# Outputs - exclude data/models but keep markdown files
+/outputs/data/*
+!/outputs/data/*.md
+!/outputs/data/.gitkeep
+/outputs/models/*
+!/outputs/models/*.md
+!/outputs/models/.gitkeep
+/outputs/eval/*
+!/outputs/eval/.gitkeep
+/outputs/.cache/*
+!/outputs/.cache/.gitkeep
+/outputs/figures/*
+!/outputs/figures/.gitkeep
+/outputs/reports/*
+!/outputs/reports/.gitkeep
+
+# Playwright MCP artifacts
+.playwright-mcp/
+
+# OAuth/Auth credentials
+credentials.json
+token.json
+token.pickle
+*.pickle
+
+# Generated RAG vector store
+email_agent/agent/tools/rag/guidance_db/

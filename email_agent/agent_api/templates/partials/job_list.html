@@ -1,0 +1,26 @@
+{% if jobs %}
+    {% for job in jobs %}
+    <a href="/jobs/{{ job.job_id }}" class="job-card">
+        <div class="job-card-row">
+            <div class="job-card-content">
+                <div class="job-card-from">{{ job.from_name or job.from_email or 'Unknown sender' }}</div>
+                <div class="job-card-subject">{{ job.subject or 'No subject' }}</div>
+            </div>
+            <div class="job-card-meta">
+                <span class="job-card-time">{{ job.time_ago or '' }}</span>
+                <span class="job-card-action">{{ job.action_label }}</span>
+            </div>
+        </div>
+    </a>
+    {% endfor %}
+{% else %}
+<div class="empty-state">
+    <div class="empty-state-icon">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+        </svg>
+    </div>
+    <p>No emails to review</p>
+    <p><small>New items will appear here automatically</small></p>
+</div>
+{% endif %}

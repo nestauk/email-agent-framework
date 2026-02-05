@@ -1,0 +1,464 @@
+{% extends "base.html" %}
+
+{% block title %}Review - Email Agent{% endblock %}
+
+{% block head %}
+<style>
+    .review-container {
+        max-width: 640px;
+        margin: 0 auto;
+    }
+
+    .email-summary {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 1rem 1.25rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .email-from {
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 0.25rem;
+    }
+
+    .email-subject {
+        color: #64748b;
+        font-size: 0.875rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .email-preview {
+        color: #475569;
+        font-size: 0.9375rem;
+        line-height: 1.5;
+    }
+
+    .email-attachments {
+        margin-top: 0.75rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .attachment-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 4px;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+        color: #64748b;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+
+    .attachment-chip:hover {
+        background: #f1f5f9;
+        border-color: #cbd5e1;
+    }
+
+    .attachment-chip svg {
+        flex-shrink: 0;
+    }
+
+    .attachment-preview {
+        margin-top: 0.75rem;
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        padding: 0.75rem 1rem;
+        font-size: 0.8125rem;
+        color: #475569;
+        line-height: 1.5;
+        max-height: 150px;
+        overflow-y: auto;
+    }
+
+    .attachment-preview-header {
+        font-weight: 600;
+        color: #334155;
+        margin-bottom: 0.5rem;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.025em;
+    }
+
+    .attachment-download {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        margin-top: 0.5rem;
+        padding: 0.375rem 0.75rem;
+        background: #3b82f6;
+        color: white;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        text-decoration: none;
+        transition: background 0.15s;
+    }
+
+    .attachment-download:hover {
+        background: #2563eb;
+        color: white;
+    }
+
+    .attachment-download svg {
+        flex-shrink: 0;
+    }
+
+    .context-text {
+        font-size: 1.1rem;
+        color: #374151;
+        margin-bottom: 1.25rem;
+        font-weight: 500;
+    }
+
+    .option-btn {
+        display: flex;
+        align-items: flex-start;
+        width: 100%;
+        text-align: left;
+        padding: 1rem 1.25rem;
+        margin-bottom: 0.75rem;
+        background: white;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        color: #1f2937;
+    }
+
+    .option-btn:hover {
+        border-color: #3b82f6;
+        background: #eff6ff;
+    }
+
+    .option-btn:active {
+        transform: scale(0.99);
+    }
+
+    .option-letter {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 28px;
+        width: 28px;
+        height: 28px;
+        background: #3b82f6;
+        color: white;
+        border-radius: 50%;
+        font-weight: 600;
+        margin-right: 0.75rem;
+        font-size: 0.875rem;
+        flex-shrink: 0;
+    }
+
+    .option-text {
+        color: #374151;
+        line-height: 1.5;
+        flex: 1;
+    }
+
+
+    .secondary-actions {
+        text-align: center;
+        margin-top: 1.5rem;
+        font-size: 0.875rem;
+    }
+
+    .text-link {
+        color: #3b82f6;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    .text-link:hover {
+        text-decoration: underline;
+    }
+
+    .text-link-muted {
+        color: #9ca3af;
+    }
+
+    .text-link-muted:hover {
+        color: #6b7280;
+    }
+
+    .dot-separator {
+        color: #d1d5db;
+        margin: 0 0.5rem;
+    }
+
+    .custom-response {
+        margin-top: 1rem;
+    }
+
+    .email-details {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        margin-top: 1.5rem;
+    }
+
+    .email-details summary {
+        cursor: pointer;
+        padding: 0.75rem 1rem;
+        font-size: 0.875rem;
+        color: #64748b;
+    }
+
+    .email-details[open] summary {
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .email-full {
+        padding: 1rem;
+        white-space: pre-wrap;
+        font-size: 0.875rem;
+        color: #475569;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+
+    .back-link {
+        display: inline-block;
+        margin-top: 2rem;
+        color: #6b7280;
+        font-size: 0.875rem;
+    }
+
+    #action-result:not(:empty) {
+        margin-bottom: 1rem;
+    }
+
+    .draft-card {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .draft-label {
+        font-size: 0.875rem;
+        color: #6b7280;
+        margin-bottom: 0.25rem;
+    }
+
+    .draft-recipient {
+        font-weight: 600;
+        margin-bottom: 1rem;
+        color: #1f2937;
+    }
+
+    .draft-body {
+        white-space: pre-wrap;
+        line-height: 1.6;
+        color: #374151;
+    }
+
+    .action-row {
+        display: flex;
+        gap: 0.75rem;
+        margin-top: 1.5rem;
+    }
+
+    .action-row button {
+        flex: 1;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="review-container">
+
+{% if job.status != "pending" %}
+<article>
+    <p>This job has already been processed.</p>
+    <a href="/" role="button">Back to Dashboard</a>
+</article>
+{% else %}
+
+<div id="action-result"></div>
+
+<!-- EMAIL SUMMARY - Always visible -->
+{% if parsed.email_summary.from_email or parsed.email_summary.subject %}
+<div class="email-summary">
+    <div class="email-from">
+        {{ parsed.email_summary.from_name or parsed.email_summary.from_email }}
+    </div>
+    {% if parsed.email_summary.subject %}
+    <div class="email-subject">{{ parsed.email_summary.subject }}</div>
+    {% endif %}
+    {% if parsed.email_summary.preview %}
+    <div class="email-preview">{{ parsed.email_summary.preview }}</div>
+    {% endif %}
+    {% if attachments %}
+    <div class="email-attachments">
+        {% for att in attachments %}
+        <span class="attachment-chip" onclick="toggleAttachment('att-{{ loop.index }}')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+            </svg>
+            {{ att.filename or 'Attachment' }}
+        </span>
+        {% endfor %}
+    </div>
+    {% for att in attachments %}
+    <div id="att-{{ loop.index }}" class="attachment-preview" style="display: none;">
+        <div class="attachment-preview-header">{{ att.filename or 'Attachment' }}</div>
+        <p>{{ att.summary or 'No preview available' }}</p>
+        {% if att.base64_data %}
+        <a href="/jobs/{{ job.job_id }}/attachments/pdf_attachment_{{ loop.index0 }}"
+           target="_blank" class="attachment-download">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Open PDF
+        </a>
+        {% endif %}
+    </div>
+    {% endfor %}
+    {% endif %}
+</div>
+{% endif %}
+
+<form hx-post="/jobs/{{ job.job_id }}/action"
+      hx-target="#action-result"
+      hx-swap="innerHTML"
+      id="action-form">
+
+{% if parsed.action == "Question" %}
+    <!-- QUESTION WITH OPTIONS -->
+    {% if parsed.question.has_options %}
+        <p class="context-text">{{ parsed.question.context }}</p>
+
+        {% for opt in parsed.question.options %}
+        <button type="submit" name="action_type" value="response" class="option-btn"
+                onclick="document.getElementById('response_text').value = '{{ opt.letter }}';">
+            <span class="option-letter">{{ opt.letter }}</span>
+            <span class="option-text">{{ opt.text }}</span>
+        </button>
+        {% endfor %}
+
+        <div class="secondary-actions">
+            <a href="#" class="text-link" onclick="showCustomResponse(); return false;">Write a custom response instead</a>
+            {% if parsed.config.get('allow_ignore') %}
+            <span class="dot-separator">·</span>
+            <a href="#" class="text-link text-link-muted" onclick="document.getElementById('skip-btn').click(); return false;">Skip this</a>
+            {% endif %}
+        </div>
+
+        <div class="custom-response" id="custom-response-section" style="display: none;">
+            <textarea name="response_text" id="response_text" rows="3"
+                      placeholder="Type your own response..."></textarea>
+            <button type="submit" name="action_type" value="response" class="outline">
+                Send response
+            </button>
+        </div>
+
+    {% else %}
+        <!-- SIMPLE QUESTION (no options) -->
+        <p class="context-text">{{ parsed.question.context or parsed.args.get('content') or parsed.args.get('question', 'The agent needs your input') }}</p>
+
+        <textarea name="response_text" id="response_text" rows="4"
+                  placeholder="Type your response..."></textarea>
+        <button type="submit" name="action_type" value="response">
+            Send response
+        </button>
+    {% endif %}
+
+{% elif parsed.action == "send_email_tool" %}
+    <!-- DRAFT EMAIL REVIEW -->
+    <p class="context-text">Review this draft reply:</p>
+
+    <div class="draft-card">
+        <div class="draft-label">To:</div>
+        <div class="draft-recipient">{{ parsed.args.get('email_address', 'recipient') }}</div>
+        <div class="draft-body">{{ parsed.args.get('response_text') or parsed.args.get('body', '') }}</div>
+    </div>
+
+    <div class="action-row">
+        <button type="submit" name="action_type" value="accept">
+            Send as written
+        </button>
+        <button type="button" class="outline" onclick="showEditForm()">
+            Edit first
+        </button>
+    </div>
+
+    <div id="edit-form" style="display: none; margin-top: 1rem;">
+        <textarea name="edited_body" id="edited_body" rows="6">{{ parsed.args.get('response_text') or parsed.args.get('body', '') }}</textarea>
+        <button type="submit" name="action_type" value="edit">
+            Send edited version
+        </button>
+    </div>
+
+    {% if parsed.config.get('allow_ignore') %}
+    <div class="secondary-actions">
+        <a href="#" class="text-link text-link-muted" onclick="document.getElementById('skip-btn').click(); return false;">Ignore this email</a>
+    </div>
+    {% endif %}
+
+{% else %}
+    <!-- GENERIC ACTION -->
+    <p class="context-text">Action requires approval: {{ parsed.action }}</p>
+    <pre>{{ parsed.args | tojson(indent=2) }}</pre>
+
+    {% if parsed.config.get('allow_accept') %}
+    <button type="submit" name="action_type" value="accept">Approve</button>
+    {% endif %}
+{% endif %}
+
+<!-- HIDDEN SKIP BUTTON (triggered by text link) -->
+{% if parsed.config.get('allow_ignore') %}
+<button type="submit" name="action_type" value="ignore" id="skip-btn" style="display: none;">Skip</button>
+{% endif %}
+
+</form>
+
+<!-- FULL EMAIL - Collapsible -->
+{% if parsed.description %}
+<details class="email-details">
+    <summary>View full original email</summary>
+    <pre class="email-full">{{ parsed.description }}</pre>
+</details>
+{% endif %}
+
+<a href="/" class="back-link">&larr; Back to dashboard</a>
+
+{% endif %}
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function showEditForm() {
+    document.getElementById('edit-form').style.display = 'block';
+    document.getElementById('edited_body').focus();
+    event.target.style.display = 'none';
+}
+
+function showCustomResponse() {
+    document.getElementById('custom-response-section').style.display = 'block';
+    document.getElementById('response_text').focus();
+}
+
+function toggleAttachment(id) {
+    var el = document.getElementById(id);
+    if (el.style.display === 'none') {
+        el.style.display = 'block';
+    } else {
+        el.style.display = 'none';
+    }
+}
+</script>
+{% endblock %}

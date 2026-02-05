@@ -1,0 +1,73 @@
+{% if success %}
+<!-- Success: Show clean done state -->
+<div class="success-card">
+    <div class="success-icon">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M9 12l2 2 4-4"/>
+        </svg>
+    </div>
+    <p class="success-text">{{ message }}</p>
+    <a href="/" class="success-link">Return to Dashboard</a>
+</div>
+
+<style>
+    .success-card {
+        text-align: center;
+        padding: 2.5rem 1.5rem;
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: 12px;
+        margin: 2rem 0;
+    }
+    .success-icon {
+        margin-bottom: 1rem;
+    }
+    .success-text {
+        color: #166534;
+        font-weight: 500;
+        font-size: 1.1rem;
+        margin-bottom: 1.5rem;
+    }
+    .success-link {
+        display: inline-block;
+        background: #22c55e;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 6px;
+        text-decoration: none;
+        font-weight: 500;
+        transition: background 0.15s;
+    }
+    .success-link:hover {
+        background: #16a34a;
+        color: white;
+    }
+    /* Hide the rest of the page content */
+    .email-summary,
+    #action-form,
+    .email-details,
+    .back-link {
+        display: none !important;
+    }
+</style>
+{% else %}
+<div class="error-card" role="alert">
+    <strong>Error:</strong> {{ message }}
+    <br>
+    <small>Please try again or use the CLI tool for more options.</small>
+</div>
+
+<style>
+    .error-card {
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        border-radius: 8px;
+        padding: 1rem;
+        color: #991b1b;
+    }
+    .error-card small {
+        color: #b91c1c;
+    }
+</style>
+{% endif %}
