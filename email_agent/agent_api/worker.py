@@ -451,47 +451,30 @@ class LangGraphWorker:
             if self._auto_accept_interrupts:
                 action = request.get("action_request", {}).get("action", "")
 
-                # Question tool: send synthetic response (accept is not valid)
-                # Tool name defined in TOOL_CONFIG["question_tool_name"] (configuration.py)
+                # Determine resume payload per interrupt type:
+                #   Question tool (TOOL_CONFIG["question_tool_name"]) → synthetic response
+                #   Triage notify (graph.py "Email Assistant: {decision}") → ignore
+                #   Everything else (send_email, schedule_meeting) → accept
                 if action == "Question":
-                    logger.warning(
-                        "Auto-accept: Question tool received synthetic response for user=%s thread=%s. "
-                        "Set WORKER_AUTO_ACCEPT_INTERRUPTS=false for real HITL.",
-                        user_id,
-                        thread_id,
-                    )
-                    resume_cmd = Command(resume=[{"type": "response", "args": "Proceed with your best judgement"}])
-
-                # Triage notify: log the skipped notification
-                # Prefix constructed in graph.py triage_interrupt_handler ("Email Assistant: {decision}")
+                    resume_payload = {"type": "response", "args": "Proceed with your best judgement"}
+                    log_level = logging.WARNING
+                    log_msg = "Auto-accept: Question tool received synthetic response"
                 elif action.startswith("Email Assistant:"):
-                    logger.info(
-                        "Auto-accept: skipping notify interrupt for user=%s thread=%s action=%s",
-                        user_id,
-                        thread_id,
-                        action,
-                    )
-                    resume_cmd = Command(resume=[{"type": "ignore"}])
-
-                # All other tools (send_email, schedule_meeting): accept as before
+                    resume_payload = {"type": "ignore"}
+                    log_level = logging.INFO
+                    log_msg = "Auto-accept: skipping notify interrupt"
                 else:
-                    logger.info(
-                        "Auto-accepting interrupt for user=%s thread=%s action=%s",
-                        user_id,
-                        thread_id,
-                        action,
-                    )
-                    resume_cmd = Command(resume=[{"type": "accept"}])
+                    resume_payload = {"type": "accept"}
+                    log_level = logging.INFO
+                    log_msg = "Auto-accepting interrupt"
 
-                try:
-                    await self._consume_graph_stream(
-                        {"configurable": {"thread_id": thread_id, "user_id": user_id}},
-                        resume_cmd,
-                        user_id=user_id,
-                        email_metadata=email_metadata,
-                    )
-                finally:
-                    pass
+                logger.log(log_level, "%s for user=%s thread=%s action=%s", log_msg, user_id, thread_id, action)
+                await self._consume_graph_stream(
+                    {"configurable": {"thread_id": thread_id, "user_id": user_id}},
+                    Command(resume=[resume_payload]),
+                    user_id=user_id,
+                    email_metadata=email_metadata,
+                )
                 continue
 
             job_id = self._register_interrupt_job(
