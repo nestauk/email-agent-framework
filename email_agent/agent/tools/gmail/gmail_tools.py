@@ -439,11 +439,13 @@ def fetch_group_emails(
                                             "content-type",
                                         } and "filename=" in h.get("value", ""):
                                             filename = h["value"].split("filename=")[-1].strip().strip('"')
-                                    pdf_attachments.append({
-                                        "filename": filename,
-                                        "content": content,
-                                        "base64_data": base64_data,
-                                    })
+                                    pdf_attachments.append(
+                                        {
+                                            "filename": filename,
+                                            "content": content,
+                                            "base64_data": base64_data,
+                                        }
+                                    )
                     # Yield the processed email data
                     yield {
                         "from_email": from_email,

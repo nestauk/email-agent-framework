@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
+import base64
 import json
 import os
 import secrets
 from typing import Annotated, Any
 from urllib.parse import urlencode
-
-import base64
 
 import httpx
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
@@ -202,11 +201,15 @@ def _parse_job_payload(job: dict[str, Any]) -> dict[str, Any]:
     question_content = args.get("content") or args.get("question", "")
 
     # Parse question for multiple choice options
-    question_parsed = _parse_question_options(question_content) if question_content else {
-        "context": question_content,
-        "options": [],
-        "has_options": False,
-    }
+    question_parsed = (
+        _parse_question_options(question_content)
+        if question_content
+        else {
+            "context": question_content,
+            "options": [],
+            "has_options": False,
+        }
+    )
 
     # Parse email summary from description
     email_summary = _parse_email_summary(description)

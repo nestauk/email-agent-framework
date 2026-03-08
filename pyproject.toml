@@ -97,6 +97,8 @@ convention = "google"
 "email_agent/agent/**/*.py" = ["ANN", "D", "E501", "C901", "N806", "B005", "B905"]
 "email_agent/agent_api/cli.py" = ["ANN", "D", "C901"]
 "email_agent/agent_api/worker.py" = ["E402", "I001"]
+"email_agent/agent_api/web_routes.py" = ["B008", "C901"]
+"scripts/**/*.py" = ["ANN", "D"]
 "tests/**/*.py" = ["ANN", "D"]
 
 [tool.ruff.format]

@@ -4,8 +4,8 @@ import os
 from datetime import datetime
 
 import matplotlib.pyplot as plt
-from langsmith import Client
 from langgraph.store.memory import InMemoryStore
+from langsmith import Client
 
 from ..graph import overall_workflow
 from .email_dataset import examples_triage
@@ -86,11 +86,7 @@ def run_evaluation(recreate_dataset: bool = False) -> None:
     df = experiment_results.to_pandas()
 
     # Calculate mean score
-    score = (
-        df["feedback.classification_evaluator"].mean()
-        if "feedback.classification_evaluator" in df.columns
-        else 0.0
-    )
+    score = df["feedback.classification_evaluator"].mean() if "feedback.classification_evaluator" in df.columns else 0.0
 
     # Create visualization
     plt.figure(figsize=(10, 6))

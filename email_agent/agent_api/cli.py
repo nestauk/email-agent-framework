@@ -174,13 +174,15 @@ def setup_gmail() -> None:
     save_config(config)
 
     console.print("\n[bold green]Setup complete![/bold green]")
-    console.print(Panel(
-        f"[bold]Email:[/bold] {email_address}\n"
-        f"[bold]User ID:[/bold] {user_id}\n"
-        f"[bold]Config saved to:[/bold] {CONFIG_FILE}",
-        title="Registration Successful",
-        border_style="green",
-    ))
+    console.print(
+        Panel(
+            f"[bold]Email:[/bold] {email_address}\n"
+            f"[bold]User ID:[/bold] {user_id}\n"
+            f"[bold]Config saved to:[/bold] {CONFIG_FILE}",
+            title="Registration Successful",
+            border_style="green",
+        )
+    )
 
     console.print("\n[bold]Next steps:[/bold]")
     console.print("  1. The worker will now start monitoring your inbox")
@@ -292,10 +294,11 @@ def show_job_details(db: AgentDatabase, job_id: str) -> dict[str, Any] | None:
     description = request.get("description", "")
     if description:
         import re
+
         # Remove the "Tool Call: ..." section that contains raw JSON
-        clean_desc = re.split(r'\n-+\n\s*Tool Call:', description)[0].strip()
+        clean_desc = re.split(r"\n-+\n\s*Tool Call:", description)[0].strip()
         # Remove "# Question for User" section (shown separately below)
-        clean_desc = re.split(r'\n-+\n\s*#\s*Question for User', clean_desc)[0].strip()
+        clean_desc = re.split(r"\n-+\n\s*#\s*Question for User", clean_desc)[0].strip()
         if clean_desc:
             console.print(Panel(Markdown(clean_desc), title="Original Email"))
 
@@ -304,9 +307,9 @@ def show_job_details(db: AgentDatabase, job_id: str) -> dict[str, Any] | None:
 
         if action == "send_email_tool":
             # send_email_tool uses: email_address, response_text, email_id, additional_recipients
-            to_addr = args.get('email_address') or args.get('to', 'N/A')
-            body = args.get('response_text') or args.get('body', '')
-            additional = args.get('additional_recipients', [])
+            to_addr = args.get("email_address") or args.get("to", "N/A")
+            body = args.get("response_text") or args.get("body", "")
+            additional = args.get("additional_recipients", [])
             recipients = f"{to_addr}" + (f" + {additional}" if additional else "")
             console.print(
                 Panel(
@@ -320,9 +323,7 @@ def show_job_details(db: AgentDatabase, job_id: str) -> dict[str, Any] | None:
         elif action == "Question":
             # Question tool uses "content" key, not "question"
             question_text = args.get("content") or args.get("question", "No question provided")
-            console.print(
-                Panel(question_text, title="Question for User", border_style="blue")
-            )
+            console.print(Panel(question_text, title="Question for User", border_style="blue"))
         else:
             console.print(Panel(json.dumps(args, indent=2, ensure_ascii=False), title=f"Args for {action}"))
 

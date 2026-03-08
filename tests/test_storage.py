@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -30,6 +29,7 @@ def db(mock_pool, monkeypatch):
 
     with patch("email_agent.agent_api.storage.pool.ThreadedConnectionPool", return_value=pool_instance):
         from email_agent.agent_api.storage import AgentDatabase
+
         database = AgentDatabase()
         database._mock_cursor = mock_cursor
         database._mock_conn = mock_conn
@@ -77,12 +77,20 @@ def test_get_job_returns_none_when_not_found(db):
 def test_get_job_returns_job_dict(db):
     """get_job returns job as dictionary."""
     db._mock_cursor.description = [
-        ("job_id",), ("user_id",), ("tool_name",), ("status",),
-        ("payload",), ("created_at",),
+        ("job_id",),
+        ("user_id",),
+        ("tool_name",),
+        ("status",),
+        ("payload",),
+        ("created_at",),
     ]
     db._mock_cursor.fetchone.return_value = (
-        "job-123", 42, "send_email_tool", "pending",
-        '{"test": "data"}', "2024-01-01T00:00:00",
+        "job-123",
+        42,
+        "send_email_tool",
+        "pending",
+        '{"test": "data"}',
+        "2024-01-01T00:00:00",
     )
 
     result = db.get_job("job-123")
@@ -106,8 +114,12 @@ def test_list_pending_jobs_returns_empty_list(db):
 def test_list_pending_jobs_returns_jobs(db):
     """list_pending_jobs returns list of job dicts."""
     db._mock_cursor.description = [
-        ("job_id",), ("user_id",), ("tool_name",), ("status",),
-        ("payload",), ("created_at",),
+        ("job_id",),
+        ("user_id",),
+        ("tool_name",),
+        ("status",),
+        ("payload",),
+        ("created_at",),
     ]
     db._mock_cursor.fetchall.return_value = [
         ("job-1", 1, "send_email_tool", "pending", "{}", "2024-01-01"),
@@ -162,12 +174,24 @@ def test_get_email_attachment_returns_none_when_not_found(db):
 def test_get_email_attachment_returns_attachment(db):
     """get_email_attachment returns attachment dict."""
     db._mock_cursor.description = [
-        ("id",), ("job_id",), ("field_path",), ("filename",),
-        ("content_type",), ("base64_data",), ("summary",), ("created_at",),
+        ("id",),
+        ("job_id",),
+        ("field_path",),
+        ("filename",),
+        ("content_type",),
+        ("base64_data",),
+        ("summary",),
+        ("created_at",),
     ]
     db._mock_cursor.fetchone.return_value = (
-        1, "job-123", "pdf_attachment_0", "test.pdf",
-        "application/pdf", "SGVsbG8=", "Test doc", "2024-01-01",
+        1,
+        "job-123",
+        "pdf_attachment_0",
+        "test.pdf",
+        "application/pdf",
+        "SGVsbG8=",
+        "Test doc",
+        "2024-01-01",
     )
 
     result = db.get_email_attachment("job-123", "pdf_attachment_0")
@@ -181,8 +205,14 @@ def test_get_email_attachment_returns_attachment(db):
 def test_get_email_attachments_returns_list(db):
     """get_email_attachments returns list of attachments for job."""
     db._mock_cursor.description = [
-        ("id",), ("job_id",), ("field_path",), ("filename",),
-        ("content_type",), ("base64_data",), ("summary",), ("created_at",),
+        ("id",),
+        ("job_id",),
+        ("field_path",),
+        ("filename",),
+        ("content_type",),
+        ("base64_data",),
+        ("summary",),
+        ("created_at",),
     ]
     db._mock_cursor.fetchall.return_value = [
         (1, "job-123", "pdf_0", "doc1.pdf", "application/pdf", "data1", "Summary 1", "2024-01-01"),
@@ -220,7 +250,9 @@ def test_get_user_returns_none_when_not_found(db):
 def test_list_active_users_returns_users(db):
     """list_active_users returns list of active user dicts."""
     db._mock_cursor.description = [
-        ("user_id",), ("email_to_monitor",), ("status",),
+        ("user_id",),
+        ("email_to_monitor",),
+        ("status",),
     ]
     db._mock_cursor.fetchall.return_value = [
         (1, "user1@example.com", "active"),

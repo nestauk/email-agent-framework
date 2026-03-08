@@ -83,12 +83,14 @@ def test_dashboard_shows_jobs(client, mock_db):
             "user_id": 1,
             "status": "pending",
             "created_at": "2024-01-01T00:00:00",
-            "payload": json.dumps({
-                "email": {
-                    "from_email": "John Doe <john@example.com>",
-                    "subject": "Meeting tomorrow",
+            "payload": json.dumps(
+                {
+                    "email": {
+                        "from_email": "John Doe <john@example.com>",
+                        "subject": "Meeting tomorrow",
+                    }
                 }
-            }),
+            ),
         }
     ]
     response = client.get("/")
@@ -119,12 +121,14 @@ def test_job_list_partial_shows_jobs(client, mock_db):
             "user_id": 42,
             "status": "pending",
             "created_at": "2024-06-15T10:30:00",
-            "payload": json.dumps({
-                "email": {
-                    "from_email": "sender@example.com",
-                    "subject": "Test subject",
+            "payload": json.dumps(
+                {
+                    "email": {
+                        "from_email": "sender@example.com",
+                        "subject": "Test subject",
+                    }
                 }
-            }),
+            ),
         }
     ]
     response = client.get("/partials/job-list")
@@ -150,24 +154,26 @@ def test_review_job_renders_details(client, mock_db):
         "tool_name": "send_email_tool",
         "status": "pending",
         "user_id": 1,
-        "payload": json.dumps({
-            "request": {
-                "description": "Email from sender@example.com",
-                "config": {
-                    "allow_accept": True,
-                    "allow_edit": True,
-                    "allow_respond": True,
-                    "allow_ignore": True,
-                },
-                "action_request": {
-                    "action": "send_email_tool",
-                    "args": {
-                        "email_address": "recipient@example.com",
-                        "response_text": "Hello, this is a test response.",
+        "payload": json.dumps(
+            {
+                "request": {
+                    "description": "Email from sender@example.com",
+                    "config": {
+                        "allow_accept": True,
+                        "allow_edit": True,
+                        "allow_respond": True,
+                        "allow_ignore": True,
                     },
-                },
+                    "action_request": {
+                        "action": "send_email_tool",
+                        "args": {
+                            "email_address": "recipient@example.com",
+                            "response_text": "Hello, this is a test response.",
+                        },
+                    },
+                }
             }
-        }),
+        ),
         "created_at": "2024-01-01T00:00:00",
     }
     mock_db.get_email_attachments.return_value = []
