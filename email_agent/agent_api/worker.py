@@ -449,16 +449,44 @@ class LangGraphWorker:
             request = requests[0]
 
             if self._auto_accept_interrupts:
-                logger.info(
-                    "Auto-accepting interrupt for user=%s thread=%s action=%s",
-                    user_id,
-                    thread_id,
-                    request.get("action_request", {}).get("action"),
-                )
+                action = request.get("action_request", {}).get("action", "")
+
+                # Question tool: send synthetic response (accept is not valid)
+                # Tool name defined in TOOL_CONFIG["question_tool_name"] (configuration.py)
+                if action == "Question":
+                    logger.warning(
+                        "Auto-accept: Question tool received synthetic response for user=%s thread=%s. "
+                        "Set WORKER_AUTO_ACCEPT_INTERRUPTS=false for real HITL.",
+                        user_id,
+                        thread_id,
+                    )
+                    resume_cmd = Command(resume=[{"type": "response", "args": "Proceed with your best judgement"}])
+
+                # Triage notify: log the skipped notification
+                # Prefix constructed in graph.py triage_interrupt_handler ("Email Assistant: {decision}")
+                elif action.startswith("Email Assistant:"):
+                    logger.info(
+                        "Auto-accept: skipping notify interrupt for user=%s thread=%s action=%s",
+                        user_id,
+                        thread_id,
+                        action,
+                    )
+                    resume_cmd = Command(resume=[{"type": "ignore"}])
+
+                # All other tools (send_email, schedule_meeting): accept as before
+                else:
+                    logger.info(
+                        "Auto-accepting interrupt for user=%s thread=%s action=%s",
+                        user_id,
+                        thread_id,
+                        action,
+                    )
+                    resume_cmd = Command(resume=[{"type": "accept"}])
+
                 try:
                     await self._consume_graph_stream(
                         {"configurable": {"thread_id": thread_id, "user_id": user_id}},
-                        Command(resume=[{"type": "accept"}]),
+                        resume_cmd,
                         user_id=user_id,
                         email_metadata=email_metadata,
                     )

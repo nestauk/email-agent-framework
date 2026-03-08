@@ -10,9 +10,8 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Any
 
+from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, HTTPException, Request
-
-from fastapi.staticfiles import StaticFiles
 
 from email_agent.agent_api.auth import verify_agent_api_key
 from email_agent.agent_api.logging_utils import configure_logging
@@ -24,6 +23,8 @@ from email_agent.agent_api.schemas import (
 )
 from email_agent.agent_api.storage import AgentDatabase
 from email_agent.agent_api.web_routes import router as web_router
+
+load_dotenv()
 
 configure_logging(os.getenv("LOGLEVEL", "INFO"))
 logger = logging.getLogger(__name__)

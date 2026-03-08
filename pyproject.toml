@@ -96,6 +96,7 @@ convention = "google"
 "__init__.py" = ["F401", "E402", "D104"]
 "email_agent/agent/**/*.py" = ["ANN", "D", "E501", "C901", "N806", "B005", "B905"]
 "email_agent/agent_api/cli.py" = ["ANN", "D", "C901"]
+"email_agent/agent_api/worker.py" = ["E402", "I001"]
 "tests/**/*.py" = ["ANN", "D"]
 
 [tool.ruff.format]

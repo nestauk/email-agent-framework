@@ -1,17 +1,50 @@
-# Nesta Email Agent Framework
+![AgentMantis](assets/banner.png)
 
-An open-source email agent framework built with [LangGraph](https://github.com/langchain-ai/langgraph). Automates email triage, response drafting, and human-in-the-loop review workflows.
+# AgentMantis — Email Agent Framework by Nesta
+
+A customisable email agent built with [LangGraph](https://github.com/langchain-ai/langgraph) that automates triage, response drafting, and human-in-the-loop review.
 
 ## Features
 
 - **Email Triage**: Automatically classifies emails as `respond`, `notify`, or `ignore`
 - **Response Drafting**: Uses LLMs to draft contextual email responses
-- **Human-in-the-Loop**: Pauses for human review before sending emails
+- **Safe by default**: The agent never sends emails without human approval. All drafts are paused for review via the web UI, CLI, or LangGraph Studio. Auto-send requires explicitly enabling `WORKER_AUTO_ACCEPT_INTERRUPTS=true` (testing only)
 - **Web UI**: Built-in dashboard for reviewing and approving email drafts
 - **Memory System**: Learns user preferences over time
 - **Gmail Integration**: Full Gmail API support for reading and sending emails
 - **RAG Support**: Optional knowledge base search for informed responses
 - **PDF Processing**: Extracts and summarizes PDF attachments
+
+![Demo](assets/demo.gif)
+
+## Background
+
+### The problem
+
+Across many organisations, administrative bottlenecks and repetitive email-based processes consume significant time. Nesta's sustainable future team identified that heat pump installers face this acutely — the DNO (distribution network operator) application process causes delays of 3–11 days, mostly waiting for trivial forms or confirmation emails, and many applications are rejected on first submission.
+
+### What we built
+
+Originally developed with [Renbee](https://www.renbee.com/), a startup tackling home decarbonisation, the first implementation was a DNO communications manager — an email agent that monitors responses, collects information, interprets requests, and follows up on behalf of installers. This open-source repo is the generalised version of that work, designed so others can adapt it for their own domain.
+
+### Why agentic AI (not filters / RAG / Gmail AI)
+
+- Unlike simple filters or auto-replies — handles complex multi-step workflows with human approval at each critical step
+- Unlike pure RAG — doesn't just retrieve context; actively asks clarifying questions, learns preferences over time, and adapts. RAG is one optional component, but the core value is the agentic loop
+- Unlike Gmail/Google's built-in AI — fully customisable to specific organisational needs, with domain-specific tools, knowledge bases, and triage rules
+
+### Design choices
+
+- **Azure OpenAI** — data residency and compliance requirements for the original deployment
+- **FlagEmbedding/BAAI embedding model** — runs locally to avoid sending potential PII through external embedding APIs. Open-source with no API dependency
+
+### Customisation for your domain
+
+The framework is email-focused. The main extension points for adapting it to a new domain are:
+
+- The **RAG knowledge base** (swap in your own documents/Qdrant collection)
+- **PDF extraction** rules (customise what gets extracted from attachments)
+- **Prompts** (`email_agent/agent/prompts.py`) for triage rules and response style
 
 ## Architecture
 
@@ -73,7 +106,7 @@ uv run pre-commit install --install-hooks
 
 ```bash
 # Start Postgres (or use docker compose below)
-# Example: docker run --name email-agent-postgres -p 5432:5432 -e POSTGRES_PASSWORD=email_password -d postgres:16-alpine
+# Example: docker run --name email-agent-postgres -p 5432:5432 -e POSTGRES_USER=email_user -e POSTGRES_PASSWORD=email_password -e POSTGRES_DB=email_agent -d postgres:16-alpine
 
 # Start the API server
 uv run uvicorn email_agent.agent_api.server:app --reload
@@ -95,6 +128,7 @@ docker compose up -d
 ## Configuration
 
 Copy `.env.example` to `.env` and configure your settings. Key variables:
+
 - `DATABASE_URL` - PostgreSQL connection string
 - `GMAIL_CLIENT_ID` / `GMAIL_CLIENT_SECRET` - OAuth credentials
 - `AZURE_OPENAI_*` - Azure OpenAI endpoints and API key
@@ -145,6 +179,7 @@ uv run email-agent-review ignore hitl-abc123
 ```
 
 The CLI requires these environment variables:
+
 - `DATABASE_URL` - PostgreSQL connection string
 - `AGENT_API_URL` - API URL (default: `http://localhost:8000`)
 - `AGENT_API_KEY` - API key if authentication is enabled
@@ -187,6 +222,7 @@ Register it in `tools/base.py` and add to the appropriate mode in `configuration
 ### Customizing Prompts
 
 Edit `email_agent/prompts.py` to customize:
+
 - Triage rules (`default_triage_instructions`)
 - Response style (`default_response_preferences`)
 - System prompts (`agent_system_prompt_hitl_memory`)
