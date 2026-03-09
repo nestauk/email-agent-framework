@@ -13,10 +13,10 @@ import os
 import signal
 import uuid
 from collections import defaultdict
-from contextlib import suppress
+from contextlib import contextmanager, suppress
 from pathlib import Path
 from types import ModuleType
-from typing import Any, Literal
+from typing import Any, Generator, Literal
 
 import aiosqlite
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
@@ -344,6 +344,27 @@ class LangGraphWorker:
         }
         return {k: v for k, v in token_payload.items() if v}
 
+    @contextmanager
+    def _gmail_token_env(self, user_id: int | None) -> Generator[None, None, None]:
+        """Temporarily inject a user's Gmail token into the environment.
+
+        send_email_tool can't access LangGraph state, so it reads GMAIL_TOKEN
+        from the environment. This context manager sets and restores the env var.
+        """
+        user = self._db.get_user(user_id) if user_id else None
+        token_payload = self._build_gmail_token_payload(user) if user else None
+        old_gmail_token = os.environ.get("GMAIL_TOKEN")
+        if token_payload:
+            os.environ["GMAIL_TOKEN"] = json.dumps(token_payload)
+        try:
+            yield
+        finally:
+            if token_payload:
+                if old_gmail_token is not None:
+                    os.environ["GMAIL_TOKEN"] = old_gmail_token
+                else:
+                    os.environ.pop("GMAIL_TOKEN", None)
+
     async def _process_email(self, user: dict[str, Any], email: dict[str, Any]) -> None:
         """Kick off the LangGraph flow for a single Gmail message."""
         user_id = user["user_id"]
@@ -420,7 +441,6 @@ class LangGraphWorker:
                     )
                     return
             # Graph finished without interrupt - email processing complete
-            self._auto_accept_question_counts.pop(thread_id, None)
             if email_metadata and user_id:
                 logger.info(
                     "\n%s\n",
@@ -432,8 +452,54 @@ class LangGraphWorker:
                 )
         except Exception:
             logger.exception("LangGraph execution failed for user=%s thread=%s", user_id, thread_id)
+        finally:
+            self._auto_accept_question_counts.pop(thread_id, None)
 
-    async def _handle_interrupts(  # noqa: C901
+    def _build_auto_accept_payload(self, action: str, thread_id: str) -> tuple[dict[str, Any], int, str]:
+        """Build the resume payload, log level, and log message for auto-accept mode.
+
+        Routes by interrupt type:
+            Question tool → synthetic response (with per-thread rate limit)
+            Triage notify ("Email Assistant: ...") → ignore
+            Everything else (send_email, schedule_meeting) → accept
+        """
+        if action == "Question":
+            self._auto_accept_question_counts[thread_id] += 1
+            q_count = self._auto_accept_question_counts[thread_id]
+
+            if q_count >= self._auto_accept_question_limit:
+                return (
+                    {
+                        "type": "response",
+                        "args": (
+                            f"Question limit ({self._auto_accept_question_limit}) reached. "
+                            "You MUST stop asking questions immediately. Draft the best "
+                            "response you can with the information you already have using "
+                            "the send_email_tool, or call the Done tool to finish."
+                        ),
+                    },
+                    logging.WARNING,
+                    f"Auto-accept: Question limit reached ({q_count}/{self._auto_accept_question_limit})",
+                )
+            return (
+                {
+                    "type": "response",
+                    "args": (
+                        "I don't have a specific answer. Stop asking questions and draft "
+                        "the best response you can with the information available. Use "
+                        "the send_email_tool or Done tool to proceed."
+                    ),
+                },
+                logging.WARNING,
+                f"Auto-accept: Question tool synthetic response ({q_count}/{self._auto_accept_question_limit})",
+            )
+
+        if action.startswith("Email Assistant:"):
+            return ({"type": "ignore"}, logging.INFO, "Auto-accept: skipping notify interrupt")
+
+        return ({"type": "accept"}, logging.INFO, "Auto-accepting interrupt")
+
+    async def _handle_interrupts(
         self,
         interrupts: list[Any],
         user_id: int | None,
@@ -453,73 +519,16 @@ class LangGraphWorker:
 
             if self._auto_accept_interrupts:
                 action = request.get("action_request", {}).get("action", "")
-
-                # Determine resume payload per interrupt type:
-                #   Question tool (TOOL_CONFIG["question_tool_name"]) → synthetic response
-                #   Triage notify (graph.py "Email Assistant: {decision}") → ignore
-                #   Everything else (send_email, schedule_meeting) → accept
-                if action == "Question":
-                    self._auto_accept_question_counts[thread_id] += 1
-                    q_count = self._auto_accept_question_counts[thread_id]
-
-                    if q_count >= self._auto_accept_question_limit:
-                        resume_payload = {
-                            "type": "response",
-                            "args": (
-                                f"Question limit ({self._auto_accept_question_limit}) reached. "
-                                "You MUST stop asking questions immediately. Draft the best "
-                                "response you can with the information you already have using "
-                                "the send_email_tool, or call the Done tool to finish."
-                            ),
-                        }
-                        log_level = logging.WARNING
-                        log_msg = f"Auto-accept: Question limit reached ({q_count}/{self._auto_accept_question_limit})"
-                    else:
-                        resume_payload = {
-                            "type": "response",
-                            "args": (
-                                "I don't have a specific answer. Stop asking questions and draft "
-                                "the best response you can with the information available. Use "
-                                "the send_email_tool or Done tool to proceed."
-                            ),
-                        }
-                        log_level = logging.WARNING
-                        log_msg = (
-                            f"Auto-accept: Question tool received synthetic response "
-                            f"({q_count}/{self._auto_accept_question_limit})"
-                        )
-                elif action.startswith("Email Assistant:"):
-                    resume_payload = {"type": "ignore"}
-                    log_level = logging.INFO
-                    log_msg = "Auto-accept: skipping notify interrupt"
-                else:
-                    resume_payload = {"type": "accept"}
-                    log_level = logging.INFO
-                    log_msg = "Auto-accepting interrupt"
-
+                resume_payload, log_level, log_msg = self._build_auto_accept_payload(action, thread_id)
                 logger.log(log_level, "%s for user=%s thread=%s action=%s", log_msg, user_id, thread_id, action)
 
-                # Inject Gmail token into environment so send_email_tool can authenticate
-                # (mirrors the pattern in _handle_resume for normal HITL flow)
-                user = self._db.get_user(user_id) if user_id else None
-                token_payload = self._build_gmail_token_payload(user) if user else None
-                old_gmail_token = os.environ.get("GMAIL_TOKEN")
-                if token_payload:
-                    os.environ["GMAIL_TOKEN"] = json.dumps(token_payload)
-
-                try:
+                with self._gmail_token_env(user_id):
                     await self._consume_graph_stream(
                         {"configurable": {"thread_id": thread_id, "user_id": user_id}},
                         Command(resume=[resume_payload]),
                         user_id=user_id,
                         email_metadata=email_metadata,
                     )
-                finally:
-                    if token_payload:
-                        if old_gmail_token is not None:
-                            os.environ["GMAIL_TOKEN"] = old_gmail_token
-                        else:
-                            os.environ.pop("GMAIL_TOKEN", None)
                 continue
 
             job_id = self._register_interrupt_job(
@@ -674,30 +683,15 @@ class LangGraphWorker:
             if trace_url:
                 logger.info("Trace (resume): %s", trace_url)
 
-        # Inject Gmail token into environment for send_email_tool
-        # (The tool can't access LangGraph state, so we pass via env var)
         user_id = job.get("user_id")
-        user = self._db.get_user(user_id) if user_id else None
-        token_payload = self._build_gmail_token_payload(user) if user else None
-        old_gmail_token = os.environ.get("GMAIL_TOKEN")
-        if token_payload:
-            os.environ["GMAIL_TOKEN"] = json.dumps(token_payload)
-
         command = Command(resume=[callback_payload])
-        try:
+        with self._gmail_token_env(user_id):
             await self._consume_graph_stream(
                 {"configurable": {"thread_id": run_handle, "user_id": user_id}, "run_id": run_id},
                 command,
                 user_id=user_id,
                 email_metadata=email_metadata,
             )
-        finally:
-            # Restore previous env var state
-            if token_payload:
-                if old_gmail_token is not None:
-                    os.environ["GMAIL_TOKEN"] = old_gmail_token
-                else:
-                    os.environ.pop("GMAIL_TOKEN", None)
 
 
 async def _run_forever(worker: LangGraphWorker) -> None:

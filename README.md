@@ -2,7 +2,7 @@
 
 # AgentMantis — Email Agent Framework by Nesta
 
-A customisable email agent built with [LangGraph](https://github.com/langchain-ai/langgraph) that automates triage, response drafting, and human-in-the-loop review.
+A customisable email agent built with [LangGraph](https://github.com/langchain-ai/langgraph) that automates triage, response drafting, and human-in-the-loop review. Includes a built-in web frontend for testing and reviewing email drafts locally.
 
 ## Features
 
