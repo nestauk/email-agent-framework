@@ -433,7 +433,7 @@ class LangGraphWorker:
         except Exception:
             logger.exception("LangGraph execution failed for user=%s thread=%s", user_id, thread_id)
 
-    async def _handle_interrupts(
+    async def _handle_interrupts(  # noqa: C901
         self,
         interrupts: list[Any],
         user_id: int | None,
@@ -498,12 +498,28 @@ class LangGraphWorker:
                     log_msg = "Auto-accepting interrupt"
 
                 logger.log(log_level, "%s for user=%s thread=%s action=%s", log_msg, user_id, thread_id, action)
-                await self._consume_graph_stream(
-                    {"configurable": {"thread_id": thread_id, "user_id": user_id}},
-                    Command(resume=[resume_payload]),
-                    user_id=user_id,
-                    email_metadata=email_metadata,
-                )
+
+                # Inject Gmail token into environment so send_email_tool can authenticate
+                # (mirrors the pattern in _handle_resume for normal HITL flow)
+                user = self._db.get_user(user_id) if user_id else None
+                token_payload = self._build_gmail_token_payload(user) if user else None
+                old_gmail_token = os.environ.get("GMAIL_TOKEN")
+                if token_payload:
+                    os.environ["GMAIL_TOKEN"] = json.dumps(token_payload)
+
+                try:
+                    await self._consume_graph_stream(
+                        {"configurable": {"thread_id": thread_id, "user_id": user_id}},
+                        Command(resume=[resume_payload]),
+                        user_id=user_id,
+                        email_metadata=email_metadata,
+                    )
+                finally:
+                    if token_payload:
+                        if old_gmail_token is not None:
+                            os.environ["GMAIL_TOKEN"] = old_gmail_token
+                        else:
+                            os.environ.pop("GMAIL_TOKEN", None)
                 continue
 
             job_id = self._register_interrupt_job(
