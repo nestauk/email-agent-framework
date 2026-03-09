@@ -83,6 +83,8 @@ class LangGraphWorker:
             "true",
             "yes",
         }
+        self._auto_accept_question_counts: defaultdict[str, int] = defaultdict(int)
+        self._auto_accept_question_limit = 3
         self._gmail_client_id = os.getenv("GMAIL_CLIENT_ID")
         self._gmail_client_secret = os.getenv("GMAIL_CLIENT_SECRET")
 
@@ -418,6 +420,7 @@ class LangGraphWorker:
                     )
                     return
             # Graph finished without interrupt - email processing complete
+            self._auto_accept_question_counts.pop(thread_id, None)
             if email_metadata and user_id:
                 logger.info(
                     "\n%s\n",
@@ -456,9 +459,35 @@ class LangGraphWorker:
                 #   Triage notify (graph.py "Email Assistant: {decision}") → ignore
                 #   Everything else (send_email, schedule_meeting) → accept
                 if action == "Question":
-                    resume_payload = {"type": "response", "args": "Proceed with your best judgement"}
-                    log_level = logging.WARNING
-                    log_msg = "Auto-accept: Question tool received synthetic response"
+                    self._auto_accept_question_counts[thread_id] += 1
+                    q_count = self._auto_accept_question_counts[thread_id]
+
+                    if q_count >= self._auto_accept_question_limit:
+                        resume_payload = {
+                            "type": "response",
+                            "args": (
+                                f"Question limit ({self._auto_accept_question_limit}) reached. "
+                                "You MUST stop asking questions immediately. Draft the best "
+                                "response you can with the information you already have using "
+                                "the send_email_tool, or call the Done tool to finish."
+                            ),
+                        }
+                        log_level = logging.WARNING
+                        log_msg = f"Auto-accept: Question limit reached ({q_count}/{self._auto_accept_question_limit})"
+                    else:
+                        resume_payload = {
+                            "type": "response",
+                            "args": (
+                                "I don't have a specific answer. Stop asking questions and draft "
+                                "the best response you can with the information available. Use "
+                                "the send_email_tool or Done tool to proceed."
+                            ),
+                        }
+                        log_level = logging.WARNING
+                        log_msg = (
+                            f"Auto-accept: Question tool received synthetic response "
+                            f"({q_count}/{self._auto_accept_question_limit})"
+                        )
                 elif action.startswith("Email Assistant:"):
                     resume_payload = {"type": "ignore"}
                     log_level = logging.INFO
