@@ -95,7 +95,7 @@ convention = "google"
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401", "E402", "D104"]
 "email_agent/agent/**/*.py" = ["ANN", "D", "E501", "C901", "N806", "B005", "B905"]
-"email_agent/agent_api/cli.py" = ["ANN", "D", "C901"]
+"email_agent/agent_api/cli.py" = ["ANN", "D", "C901", "E402", "I001"]
 "email_agent/agent_api/worker.py" = ["E402", "I001"]
 "email_agent/agent_api/web_routes.py" = ["B008", "C901"]
 "scripts/**/*.py" = ["ANN", "D"]
